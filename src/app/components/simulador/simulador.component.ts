@@ -11,6 +11,8 @@ import { ChartData } from '@core/models/simulator.interface';
 import { DialogComponent } from './dialog/dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { CardWalletComponent } from './card-wallet/card-wallet.component';
+import { WebSocketService } from 'src/app/services/websocket.service'; 
+
 export interface Stock {
   stock_symbol: string;
   number_of_shares: number;
@@ -48,7 +50,7 @@ export class SimuladorComponent {
   operation = 0;
   investments:Stock[] = []
 
-  constructor(private _simulatorService: SimulatorService, private _dialog: MatDialog) {
+  constructor(private _simulatorService: SimulatorService, private _dialog: MatDialog, private _webSocketService: WebSocketService) {
     if (typeof window !== 'undefined') {
       this.token = sessionStorage.getItem('token');
     }
@@ -56,7 +58,28 @@ export class SimuladorComponent {
 
   ngOnInit(): void {
     this.getSymbols();
-    this.getWallet();
+    //this.getWallet();
+    this.setupWebSocket();
+  }
+
+  setupWebSocket(): void {
+    if (!this._webSocketService) {
+      console.error('El servicio WebSocket no está disponible.');
+      return;
+    }
+  
+this._webSocketService?.getMessages().subscribe({
+  next: (message) => {
+    if (message.type === 'updateWallet') {
+      this.balance = message.balance;
+      this.investments = message.investments;
+      console.log(message);
+    } else if (message.type === 'updateChart') {
+      this.updateChart(message.data);
+    }
+  },
+  error: (err) => console.error('WebSocket error:', err),
+});
   }
 
   getSymbols(): void {
@@ -83,7 +106,7 @@ export class SimuladorComponent {
       if (this.token) {
         this._simulatorService.add_founds(this.balanceInput, this.token).subscribe(
           response => {
-            this.getWallet();
+            //this.getWallet();
             this.toggleInputState();
             this.balanceInput = 0;
           }
@@ -99,23 +122,23 @@ export class SimuladorComponent {
       this.isInputEnabled = true;
     }
     this.isAddingFunds = !this.isAddingFunds;
-    this.getWallet();
+    //this.getWallet();
   }
 
 
-  getWallet(): void {
-    if (this.token) {
-      this._simulatorService.get_wallet(this.token).subscribe({
-        next: (response) => {
-          this.balance = response.balance.toFixed(2);
-          this.investments = response.investments;
-        },
-        error: (err) => {
-          console.error("Error al obtener el saldo de la billetera: ", err);
-        }
-      });
-    }
-  }
+  // getWallet(): void {
+  //   if (this.token) {
+  //     this._simulatorService.get_wallet(this.token).subscribe({
+  //       next: (response) => {
+  //         this.balance = response.balance.toFixed(2);
+  //         this.investments = response.investments;
+  //       },
+  //       error: (err) => {
+  //         console.error("Error al obtener el saldo de la billetera: ", err);
+  //       }
+  //     });
+  //   }
+  // }
 
 
   filterSymbols(): void {
@@ -187,7 +210,7 @@ export class SimuladorComponent {
     if (this.operation > 0 && this.balance > 0 && this.selectedSymbol) {
       this._simulatorService.sell_symbols(this.operation, this.selectedSymbol, this.token).subscribe(
         response => {
-          this.getWallet();
+          //this.getWallet();
           const rtaOperacion = {
             codope: response.transaction_id,   
             shares: response.shares_sold,      
@@ -210,7 +233,7 @@ export class SimuladorComponent {
     if (this.operation > 0 && this.balance > 0 && this.selectedSymbol) {
       this._simulatorService.buy_symbols(this.operation, this.selectedSymbol, this.token).subscribe(
         response => {
-          this.getWallet();
+          //this.getWallet();
           const rtaOperacion = {
             codope: response.transaction_id,   
             shares: response.shares_purchased,      
