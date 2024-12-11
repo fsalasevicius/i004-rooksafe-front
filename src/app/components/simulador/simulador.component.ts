@@ -11,7 +11,7 @@ import { ChartData } from '@core/models/simulator.interface';
 import { DialogComponent } from './dialog/dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { CardWalletComponent } from './card-wallet/card-wallet.component';
-import { WebSocketService } from 'src/app/services/websocket.service'; 
+import { WebSocketService } from 'src/app/services/websocket.service';
 
 export interface Stock {
   stock_symbol: string;
@@ -48,7 +48,7 @@ export class SimuladorComponent {
   isInputEnabled = false;
   isAddingFunds = false;
   operation = 0;
-  investments:Stock[] = []
+  investments: Stock[] = []
 
   constructor(private _simulatorService: SimulatorService, private _dialog: MatDialog, private _webSocketService: WebSocketService) {
     if (typeof window !== 'undefined') {
@@ -58,28 +58,39 @@ export class SimuladorComponent {
 
   ngOnInit(): void {
     this.getSymbols();
-    //this.getWallet();
+    // this.getWallet();
+    this.sendStockSubscription();
     this.setupWebSocket();
   }
+  sendStockSubscription(): void {
+    const message = {
+      action: 'subscribe',
+      stock_symbol: 'AAPL'
+    };
 
+
+    this._webSocketService.sendMessage(message);
+  }
   setupWebSocket(): void {
+    console.log("Manito")
     if (!this._webSocketService) {
       console.error('El servicio WebSocket no está disponible.');
       return;
     }
-  
-this._webSocketService?.getMessages().subscribe({
-  next: (message) => {
-    if (message.type === 'updateWallet') {
-      this.balance = message.balance;
-      this.investments = message.investments;
-      console.log(message);
-    } else if (message.type === 'updateChart') {
-      this.updateChart(message.data);
-    }
-  },
-  error: (err) => console.error('WebSocket error:', err),
-});
+
+    this._webSocketService?.getMessages().subscribe({
+      next: (message) => {
+        console.log(message)
+        if (message.type === 'updateWallet') {
+          this.balance = message.balance;
+          this.investments = message.investments;
+          console.log(message);
+        } else if (message.type === 'updateChart') {
+          this.updateChart(message.data);
+        }
+      },
+      error: (err) => console.error('WebSocket error:', err),
+    });
   }
 
   getSymbols(): void {
@@ -203,7 +214,7 @@ this._webSocketService?.getMessages().subscribe({
   }
 
   updateAmount(change: number): void {
-    this.operation = Math.max(0, this.operation + change); 
+    this.operation = Math.max(0, this.operation + change);
   }
 
   sellSymbol() {
@@ -212,12 +223,12 @@ this._webSocketService?.getMessages().subscribe({
         response => {
           //this.getWallet();
           const rtaOperacion = {
-            codope: response.transaction_id,   
-            shares: response.shares_sold,      
-            stock_price: response.stock_price, 
-            total_cost: response.total_value,  
+            codope: response.transaction_id,
+            shares: response.shares_sold,
+            stock_price: response.stock_price,
+            total_cost: response.total_value,
             symbol: this.selectedSymbol,
-            tipo: "Venta"        
+            tipo: "Venta"
           };
           this.showSuccessDialog(rtaOperacion);
         },
@@ -235,12 +246,12 @@ this._webSocketService?.getMessages().subscribe({
         response => {
           //this.getWallet();
           const rtaOperacion = {
-            codope: response.transaction_id,   
-            shares: response.shares_purchased,      
-            stock_price: response.stock_price, 
-            total_cost: response.total_cost,  
+            codope: response.transaction_id,
+            shares: response.shares_purchased,
+            stock_price: response.stock_price,
+            total_cost: response.total_cost,
             symbol: this.selectedSymbol,
-            tipo: "Compra"        
+            tipo: "Compra"
           };
           this.showSuccessDialog(rtaOperacion);
         },
@@ -252,7 +263,7 @@ this._webSocketService?.getMessages().subscribe({
     }
   }
 
-  showSuccessDialog(rtaOperacion:any) {
+  showSuccessDialog(rtaOperacion: any) {
     this._dialog.open(DialogComponent, {
       width: '400px',
       data: {
@@ -271,7 +282,7 @@ this._webSocketService?.getMessages().subscribe({
       width: '400px',
       data: {
         message: message,
-        type: 'error' 
+        type: 'error'
       },
     });
   }
